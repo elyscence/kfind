@@ -1,10 +1,14 @@
 const std = @import("std");
-//const windows = std.os.windows;
 
 pub fn main() !void {
     const environ = std.process.Environ.empty;
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    var arena = std.heap.ArenaAllocator.init(gpa.allocator());
     defer arena.deinit();
+
     var thread = std.Io.Threaded.init(arena.allocator(), std.Io.Threaded.InitOptions{ .environ = environ });
     defer thread.deinit();
 
@@ -12,9 +16,8 @@ pub fn main() !void {
 
     var walker = try dir.walk(arena.allocator());
     defer walker.deinit();
-    //defer opened_dir.close();
-    //const dir_info = try opened_dir
+
     while (try walker.next(thread.ioBasic())) |entry| {
-        std.debug.print("{s}\n", .{entry.basename});
+        std.debug.print("{s} ({s})\n", .{ entry.basename, @tagName(entry.kind) });
     }
 }
